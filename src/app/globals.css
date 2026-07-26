@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: #5eead4;
+  color: #0f172a;
+}
+
+@media print {
+  header,
+  aside,
+  button {
+    display: none !important;
+  }
+
+  main {
+    background: white !important;
+    color: #0f172a !important;
+  }
+}
