@@ -1,6 +1,6 @@
 import { aiRateLimits } from "@/db/schema";
 import { db } from "@/db";
-import { generateJournal } from "@/lib/ai/journal-generator";
+import { generateJournal, localJournal } from "@/lib/ai/journal-generator";
 import { requireUser } from "@/lib/security/auth";
 import { readJsonBody, safeError, safeOk, sanitizeMultiline, sanitizeText } from "@/lib/security/validation";
 import { sql } from "drizzle-orm";
@@ -67,6 +67,7 @@ export async function POST(request: Request) {
     const journal = await generateJournal({ template, mood, daySummary, focus });
     return safeOk({ journal });
   } catch {
-    return safeError("AI sedang tidak tersedia. Coba lagi nanti", 503);
+    const fallback = localJournal({ template, mood, daySummary, focus });
+    return safeOk({ journal: fallback });
   }
 }

@@ -14,7 +14,7 @@ Aturan wajib:
 - Jangan mengklaim sebagai terapis/tenaga medis. Jika ada indikasi bahaya diri, sarankan mencari bantuan profesional atau orang tepercaya.
 - Jangan menghasilkan HTML atau skrip. Gunakan Markdown sederhana saja.`;
 
-function localJournal(input: GenerateInput): string {
+export function localJournal(input: GenerateInput): string {
   const focus = input.focus || "menenangkan pikiran dan memahami hari ini";
   const summary = input.daySummary || "hari yang ingin dipahami dengan lebih jernih";
 
@@ -30,50 +30,96 @@ function localJournal(input: GenerateInput): string {
 }
 
 export async function generateJournal(input: GenerateInput): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return localJournal(input);
-  }
+  const nvidiaApiKey = process.env.NVIDIA_API_KEY;
+  const nvidiaBaseUrl = process.env.NVIDIA_BASE_URL || "https://integrate.api.nvidia.com/v1";
+  const nvidiaModel = process.env.NVIDIA_MODEL || "nvidia/nemotron-3-ultra-550b-a55b";
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-      temperature: 0.65,
-      max_tokens: 700,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: JSON.stringify({
-            task: "Buat draft jurnal pribadi dalam Markdown sederhana.",
-            template: input.template,
-            mood: input.mood,
-            ringkasan_hari: input.daySummary,
-            fokus: input.focus,
-          }),
+  if (nvidiaApiKey) {
+    try {
+      const response = await fetch(`${nvidiaBaseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${nvidiaApiKey}`,
+          "Content-Type": "application/json",
         },
-      ],
-    }),
-    signal: AbortSignal.timeout(15_000),
-  });
+        body: JSON.stringify({
+          model: nvidiaModel,
+          temperature: 0.7,
+          max_tokens: 800,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            {
+              role: "user",
+              content: JSON.stringify({
+                task: "Buat draft jurnal pribadi dalam Markdown sederhana.",
+                template: input.template,
+                mood: input.mood,
+                ringkasan_hari: input.daySummary,
+                fokus: input.focus,
+              }),
+            },
+          ],
+        }),
+        signal: AbortSignal.timeout(20_000),
+      });
 
-  if (!response.ok) {
-    throw new Error("AI_PROVIDER_ERROR");
+      if (response.ok) {
+        const data = (await response.json()) as {
+          choices?: Array<{ message?: { content?: string } }>;
+        };
+        const content = data.choices?.[0]?.message?.content?.trim();
+        if (content) {
+          return content.slice(0, 8_000);
+        }
+      }
+    } catch {
+      // fallback to local template below
+    }
   }
 
-  const data = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
+  const openaiApiKey = process.env.OPENAI_API_KEY;
+  if (openaiApiKey) {
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${openaiApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+          temperature: 0.65,
+          max_tokens: 700,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            {
+              role: "user",
+              content: JSON.stringify({
+                task: "Buat draft jurnal pribadi dalam Markdown sederhana.",
+                template: input.template,
+                mood: input.mood,
+                ringkasan_hari: input.daySummary,
+                fokus: input.focus,
+              }),
+            },
+          ],
+        }),
+        signal: AbortSignal.timeout(15_000),
+      });
 
-  const content = data.choices?.[0]?.message?.content?.trim();
-  if (!content) {
-    throw new Error("AI_EMPTY_RESPONSE");
+      if (response.ok) {
+        const data = (await response.json()) as {
+          choices?: Array<{ message?: { content?: string } }>;
+        };
+        const content = data.choices?.[0]?.message?.content?.trim();
+        if (content) {
+          return content.slice(0, 8_000);
+        }
+      }
+    } catch {
+      // fallback to local template below
+    }
   }
 
-  return content.slice(0, 8_000);
+  return localJournal(input);
 }

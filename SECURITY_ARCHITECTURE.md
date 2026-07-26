@@ -5,7 +5,7 @@
 - **Frontend:** React components inside Next.js App Router, styled with Tailwind CSS. UI text and generated output are in Bahasa Indonesia.
 - **Backend:** Next.js Route Handlers provide auth, journal CRUD, health checks, and AI generation proxy endpoints.
 - **Database:** PostgreSQL through Drizzle ORM. The schema is compatible with managed PostgreSQL providers such as Supabase or Neon.
-- **AI Provider:** OpenAI Chat Completions via a server-side proxy when `OPENAI_API_KEY` is configured. A deterministic Indonesian fallback keeps the sandbox functional without secrets.
+- **AI Provider:** NVIDIA NIM API (primary) or OpenAI Chat Completions (fallback) via a server-side proxy when API keys are configured. A deterministic Indonesian fallback keeps the sandbox functional without secrets.
 - **Donation Widget:** A client-side Trakteer floating widget generates an in-app QR Code for `https://trakteer.id/perpus_opera/` without redirecting users on widget open.
 - **Open Source Distribution:** A controlled source ZIP endpoint allows users to download the app source while excluding secrets, dependencies, and build artifacts.
 
