@@ -160,7 +160,7 @@ https://trakteer.id/perpus_opera/
 - Tidak perlu environment variable tambahan untuk widget Trakteer.
 - Untuk AI provider, gunakan `OPENAI_API_KEY` pada server environment bila ingin memakai OpenAI sungguhan.
 - Untuk PostgreSQL, gunakan `DATABASE_URL`.
-- Setelah schema dipush, jalankan `src/db/rls.sql` pada database target agar RLS aktif.
+- Setelah schema dipush, jalankan `npx drizzle-kit push` untuk menerapkan struktur database.
 
 ## Checklist Pengujian Manual
 

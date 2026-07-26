@@ -56,12 +56,7 @@ export const journals = pgTable(
     title: varchar("title", { length: 160 }).notNull(),
     template: varchar("template", { length: 60 }).notNull(),
     mood: varchar("mood", { length: 60 }).notNull(),
-    encryptedContent: text("encrypted_content").notNull(),
-    encryptionMeta: jsonb("encryption_meta").$type<{
-      version: number;
-      algorithm: "AES-GCM";
-      kdf: "PBKDF2-SHA256";
-    }>().notNull(),
+    content: text("content").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

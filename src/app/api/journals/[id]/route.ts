@@ -1,7 +1,6 @@
+import { db } from "@/db";
 import { journals } from "@/db/schema";
-import { parseEncryptedEnvelope } from "@/lib/security/encryption-envelope";
 import { requireUser } from "@/lib/security/auth";
-import { withUserRls } from "@/lib/security/rls";
 import { isUuid, readJsonBody, safeError, safeOk, sanitizeText } from "@/lib/security/validation";
 import { and, eq } from "drizzle-orm";
 
@@ -26,22 +25,19 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   try {
-    const [journal] = await withUserRls(user.id, async (tx) =>
-      tx
-        .select({
-          id: journals.id,
-          title: journals.title,
-          template: journals.template,
-          mood: journals.mood,
-          encryptedContent: journals.encryptedContent,
-          encryptionMeta: journals.encryptionMeta,
-          createdAt: journals.createdAt,
-          updatedAt: journals.updatedAt,
-        })
-        .from(journals)
-        .where(and(eq(journals.id, id), eq(journals.ownerId, user.id)))
-        .limit(1),
-    );
+    const [journal] = await db
+      .select({
+        id: journals.id,
+        title: journals.title,
+        template: journals.template,
+        mood: journals.mood,
+        content: journals.content,
+        createdAt: journals.createdAt,
+        updatedAt: journals.updatedAt,
+      })
+      .from(journals)
+      .where(and(eq(journals.id, id), eq(journals.ownerId, user.id)))
+      .limit(1);
 
     if (!journal) {
       return safeError("Jurnal tidak ditemukan", 404);
@@ -72,44 +68,36 @@ export async function PUT(request: Request, context: RouteContext) {
   const title = sanitizeText(body.title, 160) || "Jurnal Tanpa Judul";
   const template = sanitizeText(body.template, 60);
   const mood = sanitizeText(body.mood, 60) || "Campur Aduk";
-  const envelope = parseEncryptedEnvelope(body.encryptedContent);
+  const content = sanitizeText(body.content, 90_000) || "";
 
   if (!ALLOWED_TEMPLATES.has(template)) {
     return safeError("Template tidak valid", 422);
   }
 
-  if (!envelope) {
-    return safeError("Konten harus dienkripsi di perangkat sebelum disimpan", 422);
+  if (!content.trim()) {
+    return safeError("Konten jurnal tidak boleh kosong", 422);
   }
 
   try {
-    const [updated] = await withUserRls(user.id, async (tx) =>
-      tx
-        .update(journals)
-        .set({
-          title,
-          template,
-          mood,
-          encryptedContent: JSON.stringify(envelope),
-          encryptionMeta: {
-            version: envelope.version,
-            algorithm: envelope.algorithm,
-            kdf: envelope.kdf,
-          },
-          updatedAt: new Date(),
-        })
-        .where(and(eq(journals.id, id), eq(journals.ownerId, user.id)))
-        .returning({
-          id: journals.id,
-          title: journals.title,
-          template: journals.template,
-          mood: journals.mood,
-          encryptedContent: journals.encryptedContent,
-          encryptionMeta: journals.encryptionMeta,
-          createdAt: journals.createdAt,
-          updatedAt: journals.updatedAt,
-        }),
-    );
+    const [updated] = await db
+      .update(journals)
+      .set({
+        title,
+        template,
+        mood,
+        content,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(journals.id, id), eq(journals.ownerId, user.id)))
+      .returning({
+        id: journals.id,
+        title: journals.title,
+        template: journals.template,
+        mood: journals.mood,
+        content: journals.content,
+        createdAt: journals.createdAt,
+        updatedAt: journals.updatedAt,
+      });
 
     if (!updated) {
       return safeError("Jurnal tidak ditemukan", 404);
@@ -133,12 +121,10 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   try {
-    const [deleted] = await withUserRls(user.id, async (tx) =>
-      tx
-        .delete(journals)
-        .where(and(eq(journals.id, id), eq(journals.ownerId, user.id)))
-        .returning({ id: journals.id }),
-    );
+    const [deleted] = await db
+      .delete(journals)
+      .where(and(eq(journals.id, id), eq(journals.ownerId, user.id)))
+      .returning({ id: journals.id });
 
     if (!deleted) {
       return safeError("Jurnal tidak ditemukan", 404);

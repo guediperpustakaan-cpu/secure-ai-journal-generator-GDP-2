@@ -33,8 +33,7 @@ CREATE TABLE IF NOT EXISTS app_journals (
   title VARCHAR(160) NOT NULL,
   template VARCHAR(60) NOT NULL,
   mood VARCHAR(60) NOT NULL,
-  encrypted_content TEXT NOT NULL,
-  encryption_meta JSONB NOT NULL,
+  content TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

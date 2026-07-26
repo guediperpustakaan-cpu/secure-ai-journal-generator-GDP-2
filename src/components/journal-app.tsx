@@ -1,6 +1,5 @@
 "use client";
 
-import { decryptJournalContent, encryptJournalContent, type ClientEncryptedEnvelope } from "@/lib/client-crypto";
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 
@@ -15,7 +14,7 @@ type JournalRecord = {
   title: string;
   template: string;
   mood: string;
-  encryptedContent: string;
+  content: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -148,11 +147,10 @@ export function JournalApp() {
   const [daySummary, setDaySummary] = useState("");
   const [focus, setFocus] = useState("");
   const [editorContent, setEditorContent] = useState("");
-  const [encryptionKey, setEncryptionKey] = useState("");
   const [activeJournalId, setActiveJournalId] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<"edit" | "preview">("edit");
 
-  const canSave = useMemo(() => editorContent.trim().length > 0 && encryptionKey.length >= 12, [editorContent, encryptionKey]);
+  const canSave = useMemo(() => editorContent.trim().length > 0, [editorContent]);
 
   async function loadJournals() {
     const data = await apiRequest<{ journals: JournalRecord[] }>("/api/journals");
@@ -233,26 +231,25 @@ export function JournalApp() {
 
   async function saveJournal() {
     if (!canSave) {
-      setMessage("Isi jurnal dan kunci enkripsi minimal 12 karakter diperlukan.");
+      setMessage("Isi jurnal tidak boleh kosong.");
       return;
     }
 
     setBusy(true);
     setMessage("");
     try {
-      const encryptedContent = await encryptJournalContent(editorContent, encryptionKey);
       const body = JSON.stringify({
         title: titleFromMarkdown(editorContent),
         template: selectedTemplate,
         mood: selectedMood,
-        encryptedContent,
+        content: editorContent,
       });
       const endpoint = activeJournalId ? `/api/journals/${activeJournalId}` : "/api/journals";
       const method = activeJournalId ? "PUT" : "POST";
       const data = await apiRequest<{ journal: JournalRecord }>(endpoint, { method, body });
       setActiveJournalId(data.journal.id);
       await loadJournals();
-      setMessage("Jurnal terenkripsi berhasil disimpan.");
+      setMessage("Jurnal berhasil disimpan.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Jurnal gagal disimpan");
     } finally {
@@ -261,24 +258,17 @@ export function JournalApp() {
   }
 
   async function openJournal(journal: JournalRecord) {
-    if (encryptionKey.length < 12) {
-      setMessage("Masukkan kunci enkripsi yang sama untuk membuka jurnal.");
-      return;
-    }
-
     setBusy(true);
     setMessage("");
     try {
-      const envelope = JSON.parse(journal.encryptedContent) as ClientEncryptedEnvelope;
-      const plaintext = await decryptJournalContent(envelope, encryptionKey);
-      setEditorContent(plaintext);
+      setEditorContent(journal.content);
       setSelectedTemplate(journal.template);
       setSelectedMood(journal.mood);
       setActiveJournalId(journal.id);
       setPreviewMode("edit");
-      setMessage("Jurnal berhasil didekripsi di perangkat Anda.");
+      setMessage("Jurnal berhasil dibuka.");
     } catch {
-      setMessage("Dekripsi gagal. Periksa kembali kunci enkripsi Anda.");
+      setMessage("Gagal membuka jurnal.");
     } finally {
       setBusy(false);
     }
@@ -441,12 +431,6 @@ export function JournalApp() {
       <section className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[360px_1fr] lg:px-8">
         <aside className="space-y-5">
           <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-5 shadow-xl">
-            <h2 className="text-lg font-bold">Kunci Enkripsi</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-400">Kunci ini tidak dikirim sebagai plaintext ke server. Simpan baik-baik; tanpa kunci, jurnal lama tidak bisa didekripsi.</p>
-            <input type="password" value={encryptionKey} onChange={(event) => setEncryptionKey(event.target.value)} className="mt-4 w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-white outline-none ring-teal-400/40 transition focus:ring-4" placeholder="Minimal 12 karakter" />
-          </div>
-
-          <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-5 shadow-xl">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold">Jurnal Tersimpan</h2>
               <span className="rounded-full bg-teal-400/10 px-3 py-1 text-xs font-semibold text-teal-200">{journals.length}</span>
@@ -540,7 +524,7 @@ export function JournalApp() {
 
             <div className="mt-5 flex flex-wrap gap-3">
               <button onClick={saveJournal} disabled={busy || !canSave} className="rounded-2xl bg-teal-600 px-5 py-3 font-bold text-white shadow-lg shadow-teal-600/20 transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50">
-                {activeJournalId ? "Simpan Perubahan Terenkripsi" : "Simpan Terenkripsi"}
+                {activeJournalId ? "Simpan Perubahan" : "Simpan Jurnal"}
               </button>
               <button onClick={exportText} disabled={!editorContent} className="rounded-2xl bg-slate-100 px-5 py-3 font-bold text-slate-800 transition hover:bg-slate-200 disabled:opacity-50">Ekspor TXT</button>
               <button onClick={exportPdf} disabled={!editorContent} className="rounded-2xl bg-slate-100 px-5 py-3 font-bold text-slate-800 transition hover:bg-slate-200 disabled:opacity-50">Simpan sebagai PDF</button>

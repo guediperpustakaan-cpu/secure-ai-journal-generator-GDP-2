@@ -6,7 +6,6 @@
 - **Backend:** Next.js Route Handlers provide auth, journal CRUD, health checks, and AI generation proxy endpoints.
 - **Database:** PostgreSQL through Drizzle ORM. The schema is compatible with managed PostgreSQL providers such as Supabase or Neon.
 - **AI Provider:** OpenAI Chat Completions via a server-side proxy when `OPENAI_API_KEY` is configured. A deterministic Indonesian fallback keeps the sandbox functional without secrets.
-- **Encryption:** Journal body is encrypted in the browser with AES-256-GCM before being sent to API routes. The server stores only the encrypted envelope.
 - **Donation Widget:** A client-side Trakteer floating widget generates an in-app QR Code for `https://trakteer.id/perpus_opera/` without redirecting users on widget open.
 - **Open Source Distribution:** A controlled source ZIP endpoint allows users to download the app source while excluding secrets, dependencies, and build artifacts.
 
@@ -34,13 +33,12 @@ Stores short-lived HTTP-only cookie sessions.
 
 ### `app_journals`
 
-Stores encrypted journal records.
+Stores journal records.
 
 - `id` UUID primary key
 - `owner_id` FK to `app_users`
 - non-sensitive metadata: `title`, `template`, `mood`
-- `encrypted_content` AES-GCM envelope as JSON string
-- `encryption_meta` algorithm metadata
+- `content` journal body text
 - timestamps
 
 ### `app_ai_rate_limits`
@@ -52,16 +50,9 @@ Stores per-user AI request buckets.
 - `request_count`
 - unique index on `rate_key + window_start`
 
-## Row Level Security
+## Database Authorization
 
-`src/db/rls.sql` enables and forces RLS on `app_journals`. Policies compare `owner_id` against `current_setting('app.user_id', true)`. API transactions call `set_config('app.user_id', userId, true)` before journal operations and also include owner filters for defense in depth.
-
-Apply locally after pushing the Drizzle schema:
-
-```bash
-npx drizzle-kit push
-psql "$DATABASE_URL" -f src/db/rls.sql
-```
+Journal queries filter by `owner_id` at the application level using Drizzle ORM. Each API route checks the authenticated user and restricts access to the owner's own records.
 
 ## Security Controls
 
