@@ -1,6 +1,7 @@
 "use client";
 
 import QRCode from "qrcode";
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 const TRAKTEER_BASE_URL = "https://trakteer.id/perpus_opera/";
@@ -110,7 +111,7 @@ export function TrakteerWidget() {
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-center">
               <p className="mb-3 text-sm font-bold text-slate-700">QR Code Trakteer</p>
               {qrCode ? (
-                <img src={qrCode} alt={`QR Code Trakteer sebesar ${formatRupiah(selectedAmount)}`} className="mx-auto h-56 w-56 rounded-2xl bg-white p-2 shadow-sm" />
+                <Image src={qrCode} alt={`QR Code Trakteer sebesar ${formatRupiah(selectedAmount)}`} width={240} height={240} className="mx-auto h-56 w-56 rounded-2xl bg-white p-2 shadow-sm" />
               ) : (
                 <div className="mx-auto grid h-56 w-56 place-items-center rounded-2xl bg-white text-sm text-slate-500">Menyiapkan QR...</div>
               )}

@@ -1,0 +1,14 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/ai/generate/route": "/api/ai/generate",
+  "/api/auth/login/route": "/api/auth/login",
+  "/api/auth/logout/route": "/api/auth/logout",
+  "/api/auth/me/route": "/api/auth/me",
+  "/api/auth/register/route": "/api/auth/register",
+  "/api/health/route": "/api/health",
+  "/api/journals/[id]/route": "/api/journals/[id]",
+  "/api/journals/route": "/api/journals",
+  "/api/source/download/route": "/api/source/download",
+  "/page": "/"
+}

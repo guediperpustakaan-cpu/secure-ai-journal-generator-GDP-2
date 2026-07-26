@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "functions": {
+    "/api/ai/generate": {},
+    "/api/auth/login": {},
+    "/api/auth/logout": {},
+    "/api/auth/me": {},
+    "/api/auth/register": {},
+    "/api/journals": {},
+    "/api/journals/[id]": {},
+    "/api/source/download": {}
+  }
+}
